@@ -5,8 +5,7 @@ from mediapipe.tasks.python import vision
 import cv2
 from streamlit_webrtc import webrtc_streamer
 
-mp_hands =  mp.solutions.hands
-hands = mp_hands.Hands(static_image_mode=True,max_num_hands=1)
+model_path = '/hand_landmarker.task'
 
 st.title("Pakistan Fingerspell Recognizer - Translator")
 
