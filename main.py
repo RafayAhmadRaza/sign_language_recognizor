@@ -3,18 +3,27 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["MEDIAPIPE_DISABLE_GPU"] = "1"
-
+import json
 import streamlit as st
 import mediapipe as mp
 from mediapipe.tasks.python import vision
 import cv2
 import numpy as np
-
+import tensorflow as tf
 BaseOptions = mp.tasks.BaseOptions
 HandLandmarker = vision.HandLandmarker
 VisionRunningMode = vision.RunningMode
 
 model_path = '/home/rafayahmadraza/Machine_Learning_Projects/sign_language_recognizor/hand_landmarker.task'
+
+tf_model_path = '/home/rafayahmadraza/Machine_Learning_Projects/sign_language_recognizor/Model/psl_fingerspell_model.keras'
+
+model = tf.keras.models.load_model(tf_model_path)
+
+psl_json = "/home/rafayahmadraza/Machine_Learning_Projects/sign_language_recognizor/Model/psl_labels.json"
+
+with open(psl_json,'r') as f:
+    prediction_dict = json.load(f)
 
 @st.cache_resource
 def get_landmarker():
@@ -39,7 +48,7 @@ def normalize_keypoints(kp: np.ndarray) -> np.ndarray:
 
 st.title("Pakistan Fingerspell Recognizer - Translator")
 
-# ✅ Use session state to track running
+
 if "running" not in st.session_state:
     st.session_state.running = False
 
@@ -80,6 +89,9 @@ if st.session_state.running:
                 kp = np.array([[lm.x, lm.y, lm.z] for lm in hand_landmarks]).flatten()
                 normalized = normalize_keypoints(kp)
 
+                predicted_value = model.predict(normalized.reshape(1,-1), verbose=0)
+                predicted_index = str(np.argmax(predicted_value[0]))
+
                 h, w, _ = img.shape
                 for lm in hand_landmarks:
                     cx, cy = int(lm.x * w), int(lm.y * h)
@@ -87,8 +99,9 @@ if st.session_state.running:
 
                 sign_placeholder.text_area(
                     "Predicted Sign",
-                    value=str(normalized[:5]),
-                    disabled=True
+                    value=str(prediction_dict[predicted_index]),
+                    disabled=True,
+                    key=f"sign_{frame_count}" 
                 )
 
         frame_placeholder.image(
